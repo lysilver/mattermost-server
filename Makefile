@@ -446,7 +446,7 @@ run-server: start-docker ## Starts the server.
 
 debug-server: start-docker
 	mkdir -p $(BUILD_WEBAPP_DIR)/dist/files
-	$(DELVE) debug  --headless --listen=:2345 --api-version=2 --accept-multiclient $(PLATFORM_FILES) --build-flags="-ldflags '\
+	$(DELVE) debug $(PLATFORM_FILES) --build-flags="-ldflags '\
 		-X github.com/mattermost/mattermost-server/model.BuildNumber=$(BUILD_NUMBER)\
 		-X \"github.com/mattermost/mattermost-server/model.BuildDate=$(BUILD_DATE)\"\
 		-X github.com/mattermost/mattermost-server/model.BuildHash=$(BUILD_HASH)\
