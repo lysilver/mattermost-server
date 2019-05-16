@@ -67,15 +67,15 @@ func (_m *PostStore) ClearCaches() {
 }
 
 // Delete provides a mock function with given fields: postId, time, deleteByID
-func (_m *PostStore) Delete(postId string, time int64, deleteByID string) store.StoreChannel {
+func (_m *PostStore) Delete(postId string, time int64, deleteByID string) *model.AppError {
 	ret := _m.Called(postId, time, deleteByID)
 
-	var r0 store.StoreChannel
-	if rf, ok := ret.Get(0).(func(string, int64, string) store.StoreChannel); ok {
+	var r0 *model.AppError
+	if rf, ok := ret.Get(0).(func(string, int64, string) *model.AppError); ok {
 		r0 = rf(postId, time, deleteByID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(store.StoreChannel)
+			r0 = ret.Get(0).(*model.AppError)
 		}
 	}
 
@@ -89,6 +89,22 @@ func (_m *PostStore) Get(id string) store.StoreChannel {
 	var r0 store.StoreChannel
 	if rf, ok := ret.Get(0).(func(string) store.StoreChannel); ok {
 		r0 = rf(id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(store.StoreChannel)
+		}
+	}
+
+	return r0
+}
+
+// GetDirectPostParentsForExportAfter provides a mock function with given fields: limit, afterId
+func (_m *PostStore) GetDirectPostParentsForExportAfter(limit int, afterId string) store.StoreChannel {
+	ret := _m.Called(limit, afterId)
+
+	var r0 store.StoreChannel
+	if rf, ok := ret.Get(0).(func(int, string) store.StoreChannel); ok {
+		r0 = rf(limit, afterId)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(store.StoreChannel)
@@ -494,21 +510,6 @@ func (_m *PostStore) Update(newPost *model.Post, oldPost *model.Post) store.Stor
 	var r0 store.StoreChannel
 	if rf, ok := ret.Get(0).(func(*model.Post, *model.Post) store.StoreChannel); ok {
 		r0 = rf(newPost, oldPost)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(store.StoreChannel)
-		}
-	}
-
-	return r0
-}
-
-func (_m *PostStore) GetDirectPostParentsForExportAfter(limit int, afterId string) store.StoreChannel {
-	ret := _m.Called(limit, afterId)
-
-	var r0 store.StoreChannel
-	if rf, ok := ret.Get(0).(func(int, string) store.StoreChannel); ok {
-		r0 = rf(limit, afterId)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(store.StoreChannel)

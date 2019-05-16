@@ -270,14 +270,14 @@ func (s *SqlPostStore) GetFlaggedPostsForChannel(userId, channelId string, offse
 
 		var posts []*model.Post
 		query := `
-			SELECT 
-				* 
-			FROM Posts 
-			WHERE 
-				Id IN (SELECT Name FROM Preferences WHERE UserId = :UserId AND Category = :Category) 
+			SELECT
+				*
+			FROM Posts
+			WHERE
+				Id IN (SELECT Name FROM Preferences WHERE UserId = :UserId AND Category = :Category)
 				AND ChannelId = :ChannelId
-				AND DeleteAt = 0 
-			ORDER BY CreateAt DESC 
+				AND DeleteAt = 0
+			ORDER BY CreateAt DESC
 			LIMIT :Limit OFFSET :Offset`
 
 		if _, err := s.GetReplica().Select(&posts, query, map[string]interface{}{"UserId": userId, "Category": model.PREFERENCE_CATEGORY_FLAGGED_POST, "ChannelId": channelId, "Offset": offset, "Limit": limit}); err != nil {
@@ -400,26 +400,26 @@ func (s *SqlPostStore) GetEtag(channelId string, allowFromCache bool) store.Stor
 	})
 }
 
-func (s *SqlPostStore) Delete(postId string, time int64, deleteByID string) store.StoreChannel {
-	return store.Do(func(result *store.StoreResult) {
+func (s *SqlPostStore) Delete(postId string, time int64, deleteByID string) *model.AppError {
 
-		appErr := func(errMsg string) *model.AppError {
-			return model.NewAppError("SqlPostStore.Delete", "store.sql_post.delete.app_error", nil, "id="+postId+", err="+errMsg, http.StatusInternalServerError)
-		}
+	appErr := func(errMsg string) *model.AppError {
+		return model.NewAppError("SqlPostStore.Delete", "store.sql_post.delete.app_error", nil, "id="+postId+", err="+errMsg, http.StatusInternalServerError)
+	}
 
-		var post model.Post
-		err := s.GetReplica().SelectOne(&post, "SELECT * FROM Posts WHERE Id = :Id AND DeleteAt = 0", map[string]interface{}{"Id": postId})
-		if err != nil {
-			result.Err = appErr(err.Error())
-		}
+	var post model.Post
+	err := s.GetReplica().SelectOne(&post, "SELECT * FROM Posts WHERE Id = :Id AND DeleteAt = 0", map[string]interface{}{"Id": postId})
+	if err != nil {
+		return appErr(err.Error())
+	}
 
-		post.Props[model.POST_PROPS_DELETE_BY] = deleteByID
+	post.Props[model.POST_PROPS_DELETE_BY] = deleteByID
 
-		_, err = s.GetMaster().Exec("UPDATE Posts SET DeleteAt = :DeleteAt, UpdateAt = :UpdateAt, Props = :Props WHERE Id = :Id OR RootId = :RootId", map[string]interface{}{"DeleteAt": time, "UpdateAt": time, "Id": postId, "RootId": postId, "Props": model.StringInterfaceToJson(post.Props)})
-		if err != nil {
-			result.Err = appErr(err.Error())
-		}
-	})
+	_, err = s.GetMaster().Exec("UPDATE Posts SET DeleteAt = :DeleteAt, UpdateAt = :UpdateAt, Props = :Props WHERE Id = :Id OR RootId = :RootId", map[string]interface{}{"DeleteAt": time, "UpdateAt": time, "Id": postId, "RootId": postId, "Props": model.StringInterfaceToJson(post.Props)})
+	if err != nil {
+		return appErr(err.Error())
+	}
+
+	return nil
 }
 
 func (s *SqlPostStore) permanentDelete(postId string) store.StoreChannel {
@@ -880,7 +880,7 @@ func (s *SqlPostStore) Search(teamId string, userId string, params *model.Search
 							` + userIdPart + `
 							` + deletedQueryPart + `
 							CHANNEL_FILTER)
-				CREATEDATE_CLAUSE							
+				CREATEDATE_CLAUSE
 				SEARCH_CLAUSE
 				ORDER BY CreateAt DESC
 			LIMIT 100`
@@ -1309,11 +1309,11 @@ func (s *SqlPostStore) determineMaxPostSize() int {
 		// The Post.Message column in MySQL has historically been TEXT, with a maximum
 		// limit of 65535.
 		if err := s.GetReplica().SelectOne(&maxPostSizeBytes, `
-			SELECT 
+			SELECT
 				COALESCE(CHARACTER_MAXIMUM_LENGTH, 0)
-			FROM 
+			FROM
 				INFORMATION_SCHEMA.COLUMNS
-			WHERE 
+			WHERE
 				table_schema = DATABASE()
 			AND	table_name = 'Posts'
 			AND	column_name = 'Message'
@@ -1446,7 +1446,7 @@ func (s *SqlPostStore) GetDirectPostParentsForExportAfter(limit int, afterId str
 			channelIds = append(channelIds, post.ChannelId)
 		}
 		query = s.getQueryBuilder().
-			Select("*").
+			Select("u.Username as Username, ChannelId, UserId, cm.Roles as Roles, LastViewedAt, MsgCount, MentionCount, cm.NotifyProps as NotifyProps, LastUpdateAt, SchemeUser, SchemeAdmin, (SchemeGuest IS NOT NULL AND SchemeGuest) as SchemeGuest").
 			From("ChannelMembers cm").
 			Join("Users u ON ( u.Id = cm.UserId )").
 			Where(sq.Eq{
